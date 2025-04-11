@@ -9,7 +9,7 @@ const userSchema = new mongoose.Schema({
     phone:{type:String},
     gst:{type:String},
     password: { type: String, required: true },
-    role: { type: String, enum: ['user', 'admin','member','specialMember'], default: 'user' },
+    role: { type: String, enum: ['user', 'admin','member','specialMember',"vendor"], default: 'user' },
     isVerified: { type: Boolean, default: false }, 
     otp: { type: String },
     otpExpiration: { type: Date },

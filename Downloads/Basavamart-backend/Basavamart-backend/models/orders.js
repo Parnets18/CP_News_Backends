@@ -28,7 +28,7 @@ const orderSchema = new mongoose.Schema({
       variant: {
         hsn: { type: String, required: true },
         name :{type:String},
-        size: { type: String, required: true },
+        size: { type: String },
         price: { type: Number, required: true },
         qty: { type: Number, required: true },
         tax:{type : Number}

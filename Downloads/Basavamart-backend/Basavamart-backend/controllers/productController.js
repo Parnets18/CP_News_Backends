@@ -7,9 +7,38 @@ const Catalog = require("../models/catalog");
 const path = require("path");
 const XLSX = require("xlsx");
 const mongoose = require("mongoose");
+// exports.addProduct = async (req, res) => {
+//   const uploadedFiles = req.files.map((file) => `/ProductImg/${file.filename}`);
+//   try {
+//     const product = new Product({
+//       productName: req.body.name,
+//       productDescription: req.body.productDescription,
+//       images: uploadedFiles,
+//       brand: req.body.brand,
+//       category: req.body.category,
+//       subcategory: req.body.subcategory,
+//       access: req.body.access,
+//       available: req.body.available,
+//       video: req.body.video,
+//       variants: JSON.parse(req.body.variants), // expects an array of variant objects
+//     });
+
+//     await product.save();
+//     console.log("product added");
+//     res.status(201).json(product);
+//   } catch (error) {
+//     console.log(error);
+//     res.status(500).json({ message: "Server error" });
+//   }
+// };
+
 exports.addProduct = async (req, res) => {
   const uploadedFiles = req.files.map((file) => `/ProductImg/${file.filename}`);
   try {
+    // Check if this is a vendor product
+    const vendorId = req.body.vendorId;
+    const vendorName = req.body.vendorName;
+    
     const product = new Product({
       productName: req.body.name,
       productDescription: req.body.productDescription,
@@ -20,7 +49,13 @@ exports.addProduct = async (req, res) => {
       access: req.body.access,
       available: req.body.available,
       video: req.body.video,
-      variants: JSON.parse(req.body.variants), // expects an array of variant objects
+      variants: JSON.parse(req.body.variants),
+      
+      // Add vendor information if provided
+      vendorId: vendorId || undefined,
+      vendorName: vendorName || undefined,
+      status: vendorId ? 'pending' : 'approved', // Admin products are auto-approved
+      addedBy: vendorId ? 'vendor' : 'admin'
     });
 
     await product.save();
@@ -32,19 +67,63 @@ exports.addProduct = async (req, res) => {
   }
 };
 
+// exports.getProducts = async (req, res) => {
+//   try {
+//     const products = await Product.find()
+//       .populate("brand")
+//       .populate("category")
+//       .populate("subcategory");
+//     res.json(products);
+//   } catch (error) {
+//     console.log(error);
+//     res.status(500).json({ message: "Server error" });
+//   }
+// };
 exports.getProducts = async (req, res) => {
   try {
-    const products = await Product.find()
+    // Build filter based on query parameters
+    let filter = {};
+    
+    // CASE 1: Vendor requesting their own products
+    if (req.query.vendorId) {
+      filter.vendorId = req.query.vendorId;
+      
+      // If vendorName also provided, use it for additional filtering
+      if (req.query.vendorName) {
+        filter.vendorName = req.query.vendorName;
+      }
+    }
+    // CASE 2: Admin requesting vendor products
+    else if (req.query.vendorOnly === 'true') {
+      // Find products that have a vendorId set (meaning vendor-added)
+      filter.vendorId = { $exists: true, $ne: null };
+    }
+    // CASE 3: Admin requesting admin products
+    else if (req.query.adminOnly === 'true') {
+      // Find products without vendorId (meaning admin-added)
+      filter.vendorId = { $exists: false };
+      
+      // Also include edge case where vendorId might be null
+      const nullVendorIdFilter = { vendorId: null };
+      
+      // Use $or to combine filters
+      filter = { $or: [filter, nullVendorIdFilter] };
+    }
+    
+    console.log("Fetching products with filter:", JSON.stringify(filter));
+    
+    const products = await Product.find(filter)
       .populate("brand")
       .populate("category")
       .populate("subcategory");
+      
+    console.log(`Found ${products.length} products matching criteria`);
     res.json(products);
   } catch (error) {
     console.log(error);
     res.status(500).json({ message: "Server error" });
   }
 };
-
 exports.getUserProduct = async (req, res) => {
   try {
     const filter = {
@@ -429,6 +508,34 @@ exports.updateCategory = async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 };
+// Make sure updateProductStatus is exported with the other functions
+exports.updateProductStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+    
+    if (!['pending', 'approved', 'rejected'].includes(status)) {
+      return res.status(400).json({ message: "Invalid status value" });
+    }
+    
+    const product = await Product.findById(id);
+    
+    if (!product) {
+      return res.status(404).json({ message: "Product not found" });
+    }
+    
+    product.status = status;
+    await product.save();
+    
+    res.status(200).json({
+      message: `Product ${status} successfully`,
+      product
+    });
+  } catch (error) {
+    console.error("Error updating product status:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
 
 exports.updateSubCategory = async (req, res) => {
   try {
@@ -514,25 +621,56 @@ exports.addBrand = async (req, res) => {
   }
 };
 
+// exports.addCategory = async (req, res) => {
+//   try {
+//     const { name, subcat } = req.body;
+//     const existingCategory = await Category.findOne({ name });
+//     if (existingCategory) {
+//       return res.status(400).json({ message: "Category already exists" });
+//     }
+//     const category = new Category({
+//       name,
+//       subcat,
+//       img: req.file ? `/CategoryImg/${req.file.filename}` : "",
+//     });
+//     await category.save();
+//     res.json(category);
+//   } catch {
+//     res.status(500).json({ message: "Server error" });
+//   }
+// };
+
+
 exports.addCategory = async (req, res) => {
   try {
-    const { name, subcat } = req.body;
+    const { name, brand } = req.body;
+    
+    if (!name) {
+      return res.status(400).json({ message: "Category name is required" });
+    }
+    
+    if (!brand) {
+      return res.status(400).json({ message: "Brand reference is required" });
+    }
+
     const existingCategory = await Category.findOne({ name });
     if (existingCategory) {
       return res.status(400).json({ message: "Category already exists" });
     }
+    
     const category = new Category({
       name,
-      subcat,
+      brand, // Correctly use the brand from the request
       img: req.file ? `/CategoryImg/${req.file.filename}` : "",
     });
+    
     await category.save();
-    res.json(category);
-  } catch {
-    res.status(500).json({ message: "Server error" });
+    res.status(201).json(category);
+  } catch (error) {
+    console.error("Error adding category:", error);
+    res.status(500).json({ message: "Server error", error: error.message });
   }
 };
-
 exports.addSubCategory = async (req, res) => {
   try {
     const { name, category } = req.body;
@@ -620,18 +758,30 @@ exports.uploadFile = async (req, res) => {
 exports.downloadFile = async (req, res) => {
   const { id } = req.params;
   try {
+    console.log("Looking for catalog with productId:", id);
     const catalog = await Catalog.findOne({ productId: id });
 
     if (!catalog) {
-      return res.status(404).send("Catalog not found");
+      console.log("No catalog found for productId:", id);
+      return res.status(404).send("Catalog not found for this product. Please upload a catalog first.");
     }
 
+    console.log("Found catalog:", catalog);
+    
     // Extract the file path
     const filePath = path.join(
       __dirname,
       "../uploads",
-      catalog.file.replace("/uploads", "")
+      catalog.file.replace("/uploads/", "")
     );
+    
+    console.log("Resolved file path:", filePath);
+
+    // Check if file exists
+    if (!fs.existsSync(filePath)) {
+      console.error("File not found at path:", filePath);
+      return res.status(404).send("Catalog file not found on server");
+    }
 
     // Serve the file
     res.download(filePath, (err) => {
@@ -645,7 +795,6 @@ exports.downloadFile = async (req, res) => {
     res.status(500).send("Server error");
   }
 };
-
 const calculateDiscountAmount = (listPrice, discount) => {
   const listPriceValue = parseFloat(listPrice) || 0;
   const discountPercentage = parseFloat(discount) || 0;

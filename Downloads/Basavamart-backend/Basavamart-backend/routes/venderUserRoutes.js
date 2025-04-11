@@ -1,12 +1,13 @@
 const express = require("express");
 
 const { protect } = require("../middleware/authMiddleware");
-const { venderUserSignup, verifyOTP, venderUserLogin, getVenderUser, addVenderUser, updateVenderUser, venderUserUpdate, deleteVenderUser, venderUserdelete } = require("../controllers/venderUserController.js");
+const { venderUserSignup, verifyOTP,requestOTP, venderUserLogin, getVenderUser, addVenderUser, updateVenderUser, venderUserUpdate, deleteVenderUser, venderUserdelete } = require("../controllers/venderUserController.js");
 const router = express.Router();
 
 router.post("/venderUserSignup", venderUserSignup);
 router.post("/verify-otp", verifyOTP);
 // router.post("/request-otp",requestOTP);
+router.post("/request-otp", requestOTP);
 router.post('/venderUserLogin',venderUserLogin);
 router.get("/getVenderUser",getVenderUser);
 router.post("/addVenderUser",addVenderUser);

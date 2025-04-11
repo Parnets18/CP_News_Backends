@@ -40,6 +40,10 @@ const productSchema = new mongoose.Schema({
   available: { type: String },
   video: { type: String },
   variants: [variantSchema], // Add variants array
+  vendorId: { type: mongoose.Schema.Types.ObjectId, ref: "Vender" },
+  vendorName: { type: String },
+  status: { type: String, enum: ['pending', 'approved', 'rejected'], default: 'pending' },
+  addedBy: { type: String, enum: ['admin', 'vendor'], default: 'admin' }
 });
 
 productSchema.methods.addVariant = function (variant) {

@@ -86,6 +86,29 @@ exports.venderUserSignup = async (req, res) => {
 };
 
 // Verify OTP
+
+exports.requestOTP = async (req, res) => {
+  try {
+    const { email } = req.body;
+    
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    
+    const otp = generateOTP();
+    user.otp = otp;
+    user.otpExpiration = Date.now() + 10 * 60 * 1000; // 10 minutes expiration
+    console.log("fwgregre ",otp)
+    await user.save();
+    
+    await sendEmail(email, "Your OTP Code", `Your OTP code is: ${otp}. This code will expire in 10 minutes.`);
+    res.status(200).json({ message: "OTP sent successfully" });
+  } catch (error) {
+    console.error("Error sending OTP:", error);
+    res.status(500).json({ message: "Failed to send OTP" });
+  }
+};
 exports.verifyOTP = async (req, res) => {
   const { email, otp } = req.body;
 

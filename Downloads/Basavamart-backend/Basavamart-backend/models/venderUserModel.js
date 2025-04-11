@@ -6,6 +6,8 @@ const venderSchema = new mongoose.Schema({
     email: { type: String, required: true, unique: true },
     password: { type: String, required: true },
     otp: { type: String },
+    role: { type: String, enum: ["vendor"], default: 'vendor' },
+
     otpExpiration: { type: Date }
 }, { timestamps: true });
 
