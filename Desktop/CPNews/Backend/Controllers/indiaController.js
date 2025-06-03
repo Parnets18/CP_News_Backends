@@ -3,7 +3,7 @@ const India = require('../Models/indiaModel');
 exports.createIndia = async (req, res) => {
   try {
     const { title, description, tags, date } = req.body;
-    const image = req.file ? req.file.path : '';
+    const image = req.file ? req.file.path.replace(/\\/g, '/') : '';
 
     const newIndia = await India.create({
       title,
