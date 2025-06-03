@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const upload = require('../middleware/uploads');
-const indiaController = require('../controllers/indiaController');
+const indiaController = require('../Controllers/indiaController');
 const verifyToken = require('../middleware/verifyToken');
 
 router.post('/', verifyToken, upload('india').single('image'), indiaController.createIndia);
