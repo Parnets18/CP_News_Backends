@@ -3,7 +3,7 @@ const Business = require('../Models/businessModel');
 exports.createBusiness = async (req, res) => {
   try {
     const { title, description, tags, date } = req.body;
-    const image = req.file ? req.file.path : '';
+    const image = req.file ? req.file.path.replace(/\\/g, '/') : '';
 
     const newBusiness = await Business.create({
       title,
@@ -23,7 +23,7 @@ exports.updateBusiness = async (req, res) => {
   try {
     const { id } = req.params;
     const { title, description, tags, date } = req.body;
-    const image = req.file ? req.file.path : undefined;
+    const image = req.file ? req.file.path.replace(/\\/g, '/') :  undefined;
 
     const updatedBusiness = await Business.findByIdAndUpdate(
       id,
