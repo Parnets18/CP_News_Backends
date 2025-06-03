@@ -10,7 +10,8 @@ exports.createPhoto = async (req, res) => {
     }
     
     // Get array of file paths if files were uploaded
-    const images = req.files ? req.files.map(file => file.path) : [];
+    const images = req.files ? req.files.map(file => file.path.replace(/\\/g, '/')) : [];
+
     
     const newPhoto = await Photo.create({
       title,
@@ -37,7 +38,9 @@ exports.updatePhoto = async (req, res) => {
     }
     
     // Get array of new file paths if files were uploaded
-    const newImages = req.files ? req.files.map(file => file.path) : undefined;
+    const newImages = req.files ? req.files.map(file => file.path.replace(/\\/g, '/')) : undefined;
+
+    
     
     const updateData = {
       title,
