@@ -3,7 +3,8 @@ const Web = require('../Models/WebModal');
 exports.createWeb = async (req, res) => {
   try {
     const { title, description, tags, date } = req.body;
-    const image = req.file ? req.file.path : '';
+    const image = req.file ? req.file.path.replace(/\\/g, '/') : '';
+
     const newWeb = await Web.create({
       title,
       description,
@@ -21,7 +22,7 @@ exports.updateWeb = async (req, res) => {
   try {
     const { id } = req.params;
     const { title, description, tags, date } = req.body;
-    const image = req.file ? req.file.path : undefined;
+    const image = req.file ? req.file.path.replace(/\\/g, '/') :  undefined;
     const updatedWeb = await Web.findByIdAndUpdate(
       id,
       {
