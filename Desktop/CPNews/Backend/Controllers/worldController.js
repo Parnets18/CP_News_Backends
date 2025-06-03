@@ -3,7 +3,8 @@ const World = require('../Models/worldModel');
 exports.createWorld = async (req, res) => {
   try {
     const { title, description, tags, date } = req.body;
-    const image = req.file ? req.file.path : '';
+    const image = req.file ? req.file.path.replace(/\\/g, '/') : '';
+
 
     const newWorld = await World.create({
       title,
@@ -22,7 +23,7 @@ exports.updateWorld = async (req, res) => {
   try {
     const { id } = req.params;
     const { title, description, tags, date } = req.body;
-    const image = req.file ? req.file.path : undefined;
+   const image = req.file ? req.file.path.replace(/\\/g, '/') : undefined;
 
     const updatedWorld = await World.findByIdAndUpdate(
       id,
