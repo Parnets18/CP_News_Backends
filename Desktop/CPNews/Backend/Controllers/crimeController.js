@@ -3,7 +3,7 @@ const Crime = require('../Models/crimeModel');
 exports.createCrime = async (req, res) => {
   try {
     const { title, description, tags, date } = req.body;
-    const image = req.file ? req.file.path : ''; // Changed from fileUrl to image
+    const image = req.file ? req.file.path.replace(/\\/g, '/') : ''; // Changed from fileUrl to image
 
     const newCrime = await Crime.create({
       title,
@@ -23,7 +23,7 @@ exports.updateCrime = async (req, res) => {
   try {
     const { id } = req.params;
     const { title, description, tags, date } = req.body;
-    const image = req.file ? req.file.path : undefined; // Changed from fileUrl to image
+    const image = req.file ? req.file.path.replace(/\\/g, '/') : undefined; // Changed from fileUrl to image
 
     const updatedCrime = await Crime.findByIdAndUpdate(
       id,
