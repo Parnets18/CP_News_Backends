@@ -15,7 +15,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Serve uploaded files statically
-//app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
 }
@@ -25,15 +25,32 @@ const viralRoutes = require('./Routes/viralRoutes');
 const sportsRoutes =require('./Routes/sportsRoutes');
 const worldRoutes = require('./Routes/worldRoutes');
 const businessRoutes = require('./Routes/businessRoutes');
+const authRoutes = require('./Routes/authRoutes');
+const videoRoutes = require('./Routes/videoRoutes');
+const webRoutes = require('./Routes/webRoutes');
+const photoRoutes = require('./Routes/photoRoutes');
+
+app.use('/api/web', webRoutes);
+
+app.use('/api/videos', videoRoutes);
+
+app.use('/api/auth', authRoutes);
+
+
 app.use('/api/business', businessRoutes);
 app.use('/api/crimes', crimeRoutes);
-app.use('/api/viral', viralRoutes);
+app.use('/api/viral',    viralRoutes);
 app.use('/api/sports', sportsRoutes);
 app.use('/api/world', worldRoutes);
+// app.use('/api/web', webRoutes);
+app.use('/api/photos', photoRoutes);
+
 app.use('/api/india', require('./Routes/indiaRoutes'));
 app.use('/api/realestate', require('./Routes/realEstateRoutes'));
 app.use('/api/mobility', require('./Routes/mobilityRoutes'));
 app.use('/api/entertainment', require('./Routes/entertainmentRoutes'));
+
+
 
 
 mongoose.connect(process.env.MONGODB_URI)
@@ -44,9 +61,9 @@ mongoose.connect(process.env.MONGODB_URI)
 
 
 // Health Check
-app.get('/', (req, res) => res.send('🚓 Crime Management API is live!'));
+app.get('/', (req, res) => res.send('🚓  API is live!'));
 
-// Error Handling
+
 app.use((req, res) => res.status(404).json({ message: 'Route not found' }));
 app.use((err, req, res, next) => {
   console.error(err);

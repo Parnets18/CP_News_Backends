@@ -1,3 +1,4 @@
+//Controllers/viralController
 const Viral = require('../Models/viralModel');
 
 exports.createViral = async(req, res)=>{

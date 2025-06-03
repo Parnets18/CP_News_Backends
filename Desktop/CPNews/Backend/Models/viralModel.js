@@ -1,3 +1,4 @@
+//Models/viralModel
 const mongoose = require('mongoose');
 
 const viralSchema = new mongoose.Schema({

@@ -1,3 +1,4 @@
+//middleware/uploads
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
@@ -9,6 +10,7 @@ const accessAsync = promisify(fs.access);
 // Supported file types with extensions mapping
 const FILE_TYPE_MAP = {
   'image/jpeg': 'jpg',
+  'image/avif': 'avif',
   'image/png': 'png',
   'image/jpg': 'jpg',
   'image/gif': 'gif',
@@ -52,7 +54,7 @@ const upload = (folderName) => multer({
   fileFilter,
   limits: { 
     fileSize: 10 * 1024 * 1024, // 10MB limit
-    files: 1 // Limit to single file
+    files: 10 // Limit to single file
   }
 });
 
