@@ -1,13 +1,36 @@
 const express = require('express');
 const router = express.Router();
-const upload = require('../middleware/uploads');
+const { createUploadMiddleware } = require('../middleware/uploads');
 const indiaController = require('../Controllers/indiaController');
-const verifyToken = require('../middleware/verifyToken');
+const authController = require('../Controllers/authController');
 
-router.post('/', verifyToken, upload('india').single('image'), indiaController.createIndia);
+// Create upload middleware specific to india category
+const indiaUpload = createUploadMiddleware('india');
+
+// POST /api/india - Create new india content (protected)
+router.post('/',
+  authController.protect,
+  indiaUpload,
+  indiaController.createIndia
+);
+
+// PUT /api/india/:id - Update india content (protected)
+router.put('/:id',
+  authController.protect,
+  indiaUpload,
+  indiaController.updateIndia
+);
+
+// DELETE /api/india/:id - Delete india content (protected)
+router.delete('/:id',
+  authController.protect,
+  indiaController.deleteIndia
+);
+
+// GET /api/india - Get all india content (public)
 router.get('/', indiaController.getIndias);
+
+// GET /api/india/:id - Get specific india content (public)
 router.get('/:id', indiaController.getIndiaById);
-router.put('/:id', verifyToken, upload('india').single('image'), indiaController.updateIndia);
-router.delete('/:id', verifyToken, indiaController.deleteIndia);
 
 module.exports = router;

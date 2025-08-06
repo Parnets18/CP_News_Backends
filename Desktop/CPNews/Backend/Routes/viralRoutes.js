@@ -1,14 +1,36 @@
 const express = require('express');
 const router = express.Router();
-const upload = require('../middleware/uploads');
+const { createUploadMiddleware } = require('../middleware/uploads');
 const viralController = require('../Controllers/viralController');
-const verifyToken = require('../middleware/verifyToken');
+const authController = require('../Controllers/authController');
 
-router.post('/', verifyToken, upload('virals').single('image'), viralController.createViral);
-router.put('/:id', verifyToken, upload('virals').single('image'), viralController.updateViral);
-router.delete('/:id', verifyToken, viralController.deleteViral);
+// Create upload middleware specific to virals category
+const viralUpload = createUploadMiddleware('virals');
 
+// POST /api/virals - Create new viral content (protected)
+router.post('/',
+  authController.protect,
+  viralUpload,
+  viralController.createViral
+);
+
+// PUT /api/virals/:id - Update viral content (protected)
+router.put('/:id',
+  authController.protect,
+  viralUpload,
+  viralController.updateViral
+);
+
+// DELETE /api/virals/:id - Delete viral content (protected)
+router.delete('/:id',
+  authController.protect,
+  viralController.deleteViral
+);
+
+// GET /api/virals - Get all viral content (public)
 router.get('/', viralController.getVirals);
+
+// GET /api/virals/:id - Get specific viral content (public)
 router.get('/:id', viralController.getViralsById);
 
 module.exports = router;

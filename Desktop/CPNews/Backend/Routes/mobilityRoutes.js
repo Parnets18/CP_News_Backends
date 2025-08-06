@@ -1,13 +1,36 @@
 const express = require('express');
 const router = express.Router();
-const upload = require('../middleware/uploads');
+const { createUploadMiddleware } = require('../middleware/uploads');
 const mobilityController = require('../Controllers/mobilityController');
-const verifyToken = require('../middleware/verifyToken');
+const authController = require('../Controllers/authController');
 
-router.post('/', verifyToken, upload('mobility').single('image'), mobilityController.createMobility);
-router.get('/',  mobilityController.getMobilities);
-router.get('/:id', upload('mobility').single('image'), mobilityController.getMobilityById);
-router.put('/:id', verifyToken, upload('mobility').single('image'), mobilityController.updateMobility);
-router.delete('/:id', verifyToken, mobilityController.deleteMobility);
+// Create upload middleware specific to mobility category
+const mobilityUpload = createUploadMiddleware('mobility');
+
+// POST /api/mobility - Create new mobility entry (protected)
+router.post('/',
+  authController.protect,
+  mobilityUpload,
+  mobilityController.createMobility
+);
+
+// PUT /api/mobility/:id - Update mobility entry (protected)
+router.put('/:id',
+  authController.protect,
+  mobilityUpload,
+  mobilityController.updateMobility
+);
+
+// DELETE /api/mobility/:id - Delete mobility entry (protected)
+router.delete('/:id',
+  authController.protect,
+  mobilityController.deleteMobility
+);
+
+// GET /api/mobility - Get all mobility entries (public)
+router.get('/', mobilityController.getMobilities);
+
+// GET /api/mobility/:id - Get specific mobility entry (public)
+router.get('/:id', mobilityController.getMobilityById);
 
 module.exports = router;

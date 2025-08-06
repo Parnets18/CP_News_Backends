@@ -1,14 +1,34 @@
 const express = require('express');
 const router = express.Router();
-const upload = require('../middleware/uploads');
+const { createMultiUploadMiddleware } = require('../middleware/uploads');
 const photoController = require('../Controllers/photoController');
-const verifyToken = require('../middleware/verifyToken');
+const authController = require('../Controllers/authController');
 
-// Limit to 10 images max per upload
-router.post('/',verifyToken, upload('photo').array('images', 10), photoController.createPhoto);
+// Create upload middleware for photos (max 10 images)
+const photoUpload = createMultiUploadMiddleware('photos', 10);
+
+// POST /api/photos - Create with multiple images
+router.post('/',
+  authController.protect,
+  photoUpload,
+  photoController.createPhoto
+);
+
+// PUT /api/photos/:id - Update with multiple images
+router.put('/:id',
+  authController.protect,
+  photoUpload,
+  photoController.updatePhoto
+);
+
+// DELETE /api/photos/:id - Delete
+router.delete('/:id',
+  authController.protect,
+  photoController.deletePhoto
+);
+
+// GET routes
 router.get('/', photoController.getPhotos);
 router.get('/:id', photoController.getPhotoById);
-router.put('/:id',verifyToken, upload('photo').array('images', 10), photoController.updatePhoto);
-router.delete('/:id',verifyToken, photoController.deletePhoto);
 
 module.exports = router;

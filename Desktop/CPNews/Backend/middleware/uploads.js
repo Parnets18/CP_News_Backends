@@ -1,61 +1,114 @@
-//middleware/uploads
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 const { promisify } = require('util');
+const createError = require('http-errors');
 
 const mkdirAsync = promisify(fs.mkdir);
 const accessAsync = promisify(fs.access);
 
-// Supported file types with extensions mapping
-const FILE_TYPE_MAP = {
-  'image/jpeg': 'jpg',
-  'image/avif': 'avif',
-  'image/png': 'png',
-  'image/jpg': 'jpg',
-  'image/gif': 'gif',
-  'image/webp': 'webp',
-  'video/mp4': 'mp4',
-  'video/quicktime': 'mov'
+const config = {
+  fileTypes: {
+    'image/jpeg': 'jpg',
+    'image/avif': 'avif',
+    'image/png': 'png',
+    'image/jpg': 'jpg',
+    'image/gif': 'gif',
+    'image/webp': 'webp',
+    'video/mp4': 'mp4',
+    'video/quicktime': 'mov'
+  },
+  maxFileSize: 10 * 1024 * 1024, // 10MB
+  maxFiles: 1,
+  uploadsBaseDir: 'uploads'
 };
 
-const storage = (folderName) => multer.diskStorage({
+const getFileExtension = (mimetype) => {
+  return config.fileTypes[mimetype] || 
+         mimetype?.split('/')[1] || 
+         'bin';
+};
+
+const storage = multer.diskStorage({
   destination: async (req, file, cb) => {
     try {
-      const dir = path.join('uploads', folderName);
+      const category = req.routeCategory || req.params?.category?.toLowerCase() || 'general';
+      const dir = path.join(config.uploadsBaseDir, category);
       
-      // Check if directory exists, if not create it
       try {
         await accessAsync(dir, fs.constants.F_OK);
       } catch (err) {
         await mkdirAsync(dir, { recursive: true });
+        console.log(`Created upload directory: ${dir}`);
       }
       
       cb(null, dir);
     } catch (err) {
-      cb(err);
+      console.error('Directory creation error:', err);
+      cb(createError(500, 'Failed to create upload directory'));
     }
   },
   filename: (req, file, cb) => {
-    const extension = FILE_TYPE_MAP[file.mimetype] || path.extname(file.originalname).substring(1);
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, `${uniqueSuffix}.${extension}`);
+    const extension = getFileExtension(file.mimetype);
+    const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1E9)}`;
+    const sanitizedOriginal = file.originalname.replace(/[^a-z0-9.]/gi, '_').toLowerCase();
+    cb(null, `${uniqueSuffix}-${sanitizedOriginal}.${extension}`);
   }
 });
 
 const fileFilter = (req, file, cb) => {
-  const isValid = !!FILE_TYPE_MAP[file.mimetype];
-  const error = isValid ? null : new Error(`Invalid file type. Only ${Object.keys(FILE_TYPE_MAP).map(t => t.split('/')[1]).join(', ')} are allowed.`);
-  cb(error, isValid);
+  if (!file || !file.mimetype) {
+    return cb(createError(400, 'Invalid file data received'));
+  }
+
+  const isValid = !!config.fileTypes[file.mimetype];
+  
+  if (!isValid) {
+    const error = createError(400, 
+      `Invalid file type. Allowed types: ${Object.keys(config.fileTypes).join(', ')}`
+    );
+    return cb(error, false);
+  }
+  
+  cb(null, true);
 };
 
-const upload = (folderName) => multer({
-  storage: storage(folderName),
+const multerInstance = multer({
+  storage,
   fileFilter,
   limits: { 
-    fileSize: 10 * 1024 * 1024, // 10MB limit
-    files: 10 // Limit to single file
+    fileSize: config.maxFileSize,
+    files: config.maxFiles
   }
 });
 
-module.exports = upload;
+// For single file uploads
+const createUploadMiddleware = (category) => {
+  return (req, res, next) => {
+    req.routeCategory = category;
+    return multerInstance.single('image')(req, res, next);
+  };
+};
+
+// For multiple file uploads
+const createMultiUploadMiddleware = (category, maxCount = 10) => {
+  return (req, res, next) => {
+    req.routeCategory = category;
+    return multerInstance.array('images', maxCount)(req, res, next);
+  };
+};
+
+// For dynamic category routes
+const dynamicUpload = (req, res, next) => {
+  if (!req.headers['content-type'] || !req.headers['content-type'].includes('multipart/form-data')) {
+    return next();
+  }
+  return multerInstance.single('image')(req, res, next);
+};
+
+module.exports = {
+  multerInstance,
+  createUploadMiddleware,
+  createMultiUploadMiddleware,
+  dynamicUpload
+};

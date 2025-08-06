@@ -1,13 +1,32 @@
 const express = require('express');
 const router = express.Router();
-const upload = require('../middleware/uploads');
+const { createUploadMiddleware } = require('../middleware/uploads');
 const worldController = require('../Controllers/worldController');
-const verifyToken = require('../middleware/verifyToken');
+const authController = require('../Controllers/authController');
 
-router.post('/',verifyToken, upload('world').single('image'), worldController.createWorld);
+// Create upload middleware specific to world category
+const worldUpload = createUploadMiddleware('world');
+
+// Protected routes
+router.post('/',
+  authController.protect,
+  worldUpload,
+  worldController.createWorld
+);
+
+router.put('/:id',
+  authController.protect,
+  worldUpload,
+  worldController.updateWorld
+);
+
+router.delete('/:id',
+  authController.protect,
+  worldController.deleteWorld
+);
+
+// Public routes
 router.get('/', worldController.getWorlds);
 router.get('/:id', worldController.getWorldById);
-router.put('/:id',verifyToken, upload('world').single('image'), worldController.updateWorld);
-router.delete('/:id',verifyToken, worldController.deleteWorld);
 
 module.exports = router;
